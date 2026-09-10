@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ordinary Differential Equations — an IB DP AA HL visual companion</title>
+
+<!-- ========================================================================
+     FONTS — Fraunces (display serif, carries the "handwritten proof" voice)
+     + IBM Plex Sans (UI/body) + IBM Plex Mono (numeric read-outs: step
+     size, table values — genuinely tabular data, not decoration).
+======================================================================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Tailwind (utility layer only — all tokens below are custom, not Tailwind defaults) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- KaTeX for rendering the derivation steps -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+  /* ----------------------------------------------------------------------
+     DESIGN TOKENS
+     Paper: near-white with a faint blue-grey grid (graph-paper, not cream).
+     Ink:   deep navy for text — a fountain-pen register, not pure black.
+     Rust (accent-curve):  the analytical solution / "exact" family.
+     Teal  (accent-euler): the numerical / constructive method.
+     Gold  (accent-mark):  initial conditions & interactive markers only.
+  ------------------------------------------------------------------------- */
+  :root{
+    --paper:      #ffffff;
+    --paper-2:    #faf9f6;
+    --grid-line:  #ece9e0;
+    --ink:        #231f20;
+    --ink-soft:   #37424e;
+    --ink-faint:  #7d7c5f;
+    --rule:       #ded9c9;
+    --rust:       #720e19;
+    --rust-soft:  #f1e0e1;
+    --teal:       #37424e;
+    --teal-soft:  #e2e5e8;
+    --gold:       #ffc600; /* PANTONE 123 C */
+    --gold-ink:   #a67c00; /* darkened gold — used only where gold sits on a thin line/text, for legibility */
+    --focus:      #37424e;
+  }
+
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    /* Graph-paper texture — grounded in the subject matter, not decoration */
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
+  }
+  .font-display{ font-family:'Fraunces', ui-serif, Georgia, serif; }
+  .font-mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; }
+
+  ::selection{ background:var(--teal-soft); color:var(--ink); }
+
+  /* Focus rings — visible keyboard focus, teal not blue, still legible */
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible{
+    outline:2px solid var(--focus); outline-offset:2px; border-radius:2px;
+  }
+
+  /* -------------------- notebook-tab module switcher -------------------- */
+  .modtab{
+    position:relative;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:500;
+    color:var(--ink-soft);
+    padding:.65rem .25rem;
+    border-bottom:2px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+    white-space:nowrap;
+  }
+  .modtab:hover{ color:var(--ink); }
+  .modtab[aria-selected="true"]{
+    color:var(--ink);
+    border-bottom-color: var(--tab-accent, var(--teal));
+  }
+  .modtab .tabnum{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.7rem;
+    color:var(--ink-faint);
+    margin-right:.45rem;
+  }
+
+  /* -------------------- "the page": derivation panel -------------------- */
+  .page-panel{
+    background:var(--paper);
+    border-left:3px solid var(--rule);
+    padding-left:1.4rem;
+  }
+  .step-line{
+    border-top:1px solid var(--rule);
+    padding-top:.9rem;
+    margin-top:.9rem;
+  }
+  .step-line:first-child{ border-top:none; padding-top:0; margin-top:0; }
+  .step-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.7rem;
+    color:var(--ink-faint);
+    letter-spacing:.02em;
+  }
+  .step-body{ color:var(--ink); font-size:.95rem; line-height:1.55; }
+  .step-note{ color:var(--ink-soft); font-size:.83rem; margin-top:.15rem; }
+  .step-hidden{ display:none; }
+
+  .result-box{
+    background:var(--paper-2);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--teal);
+    padding:.9rem 1rem;
+  }
+
+  /* -------------------- controls -------------------- */
+  select.io, input[type="number"].io{
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--paper);
+    border:1px solid var(--rule);
+    padding:.5rem .6rem;
+    color:var(--ink);
+    width:100%;
+  }
+  input[type="range"]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:4px; background:var(--rule); border-radius:2px; outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:15px; height:15px; border-radius:50%;
+    background: var(--slider-color, var(--teal));
+    border:2px solid var(--paper);
+    box-shadow:0 0 0 1px var(--slider-color, var(--teal));
+    cursor:pointer; margin-top:-1px;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%;
+    background: var(--slider-color, var(--teal));
+    border:2px solid var(--paper);
+    box-shadow:0 0 0 1px var(--slider-color, var(--teal));
+    cursor:pointer;
+  }
+  .slider-row .readout{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:.8rem; color:var(--ink);
+    background:var(--paper-2);
+    border:1px solid var(--rule);
+    padding:.1rem .45rem;
+    min-width:3.4rem; text-align:right;
+  }
+
+  .btn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:500; font-size:.85rem;
+    padding:.5rem 1rem;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    background:transparent;
+    transition:background .15s ease, color .15s ease;
+  }
+  .btn:hover{ background:var(--ink); color:var(--paper); }
+  .btn.primary{ background:var(--teal); border-color:var(--teal); color:#fff; }
+  .btn.primary:hover{ background:#232a32; }
+  .btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .btn:disabled:hover{ background:transparent; color:var(--ink); }
+
+  .legend-dot{ width:.6rem; height:.6rem; border-radius:50%; display:inline-block; }
+  .legend-line{ width:1.1rem; height:2px; display:inline-block; }
+
+  canvas{ display:block; width:100%; height:100%; touch-action:none; }
+
+  table.euler-table{ font-family:'IBM Plex Mono', monospace; font-size:.78rem; width:100%; border-collapse:collapse; }
+  table.euler-table th{ text-align:right; font-weight:500; color:var(--ink-soft); border-bottom:1px solid var(--ink); padding:.3rem .5rem; }
+  table.euler-table td{ text-align:right; padding:.25rem .5rem; border-bottom:1px solid var(--rule); }
+  table.euler-table tr:last-child td{ background:var(--teal-soft); font-weight:600; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+
+<body class="min-h-screen">
+
+<!-- ============================== HEADER ============================== -->
+<header class="border-b border-[var(--ink)]/80 bg-[var(--paper)]/95 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-6 pb-4">
+    <p class="font-mono text-[.68rem] tracking-wide text-[var(--ink-faint)] mb-1">IB DP Mathematics · Analysis &amp; Approaches HL · Topic 5</p>
+    <h1 class="font-display text-[1.9rem] sm:text-[2.4rem] leading-none text-[var(--ink)]">
+      Four ways to solve <span class="italic font-normal">dy/dx = f(x, y)</span>
+    </h1>
+    <p class="text-[var(--ink-soft)] text-sm sm:text-base mt-2 max-w-2xl">
+      Every first‑order differential equation you meet at HL falls into one of a handful of shapes.
+      Pick a shape below, walk through the derivation on the left, and watch the solution take form on the right.
+    </p>
+  </div>
+
+  <!-- module tabs -->
+  <nav class="max-w-6xl mx-auto px-5 sm:px-8" aria-label="Module selector">
+    <div class="flex gap-6 sm:gap-9 overflow-x-auto no-scrollbar border-t border-[var(--rule)]" role="tablist">
+      <button class="modtab" style="--tab-accent:#720e19" role="tab" data-mod="separable" aria-selected="true">
+        <span class="tabnum">§8.3</span>Separable variables
+      </button>
+      <button class="modtab" style="--tab-accent:#37424e" role="tab" data-mod="homogeneous" aria-selected="false">
+        <span class="tabnum">§8.3</span>Homogeneous substitution
+      </button>
+      <button class="modtab" style="--tab-accent:#ffc600" role="tab" data-mod="linear" aria-selected="false">
+        <span class="tabnum">§8.3</span>Linear · integrating factor
+      </button>
+      <button class="modtab" style="--tab-accent:#7d7c5f" role="tab" data-mod="euler" aria-selected="false">
+        <span class="tabnum">§8.3</span>Euler's method
+      </button>
+    </div>
+  </nav>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 sm:px-8 py-8">
+
+  <!-- ======================================================================
+       MODULE 1 — SEPARABLE VARIABLES
+  ======================================================================= -->
+  <section id="mod-separable" class="module-section grid lg:grid-cols-[400px_1fr] gap-10">
+
+    <div class="page-panel">
+      <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-1">MODEL</p>
+      <select id="sep-preset" class="io mb-1"></select>
+      <p id="sep-context" class="step-note mb-4"></p>
+
+      <div id="sep-controls" class="space-y-3 mb-5"></div>
+
+      <div class="flex gap-2 mb-5">
+        <button id="sep-next" class="btn primary">Reveal next step</button>
+        <button id="sep-reset" class="btn">Reset steps</button>
+      </div>
+
+      <div id="sep-steps"></div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <div class="border border-[var(--rule)] bg-white" style="aspect-ratio:4/3">
+        <canvas id="sep-canvas"></canvas>
+      </div>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ink-soft)]">
+        <span><i class="legend-line" style="background:var(--ink-faint)"></i> direction field</span>
+        <span><i class="legend-line" style="background:var(--rust)"></i> particular solution</span>
+        <span><i class="legend-dot" style="background:var(--gold)"></i> initial condition</span>
+      </div>
+      <p class="text-xs text-[var(--ink-faint)]">Drag the initial‑condition slider — the curve is re‑solved live, it isn't a pre‑baked animation.</p>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       MODULE 2 — HOMOGENEOUS SUBSTITUTION
+  ======================================================================= -->
+  <section id="mod-homogeneous" class="module-section hidden grid lg:grid-cols-[400px_1fr] gap-10">
+
+    <div class="page-panel">
+      <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-1">MODEL</p>
+      <select id="hom-preset" class="io mb-1"></select>
+      <p id="hom-context" class="step-note mb-4"></p>
+
+      <div id="hom-controls" class="space-y-3 mb-5"></div>
+
+      <label class="flex items-center gap-2 text-sm text-[var(--ink-soft)] mb-5">
+        <input type="checkbox" id="hom-rays" class="accent-[var(--teal)]" checked>
+        show scale‑invariance rays from the origin
+      </label>
+
+      <div class="flex gap-2 mb-5">
+        <button id="hom-next" class="btn primary">Reveal next step</button>
+        <button id="hom-reset" class="btn">Reset steps</button>
+      </div>
+
+      <div id="hom-steps"></div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <div class="border border-[var(--rule)] bg-white" style="aspect-ratio:4/3">
+        <canvas id="hom-canvas"></canvas>
+      </div>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ink-soft)]">
+        <span><i class="legend-line" style="background:var(--ink-faint)"></i> direction field</span>
+        <span><i class="legend-line" style="background:var(--teal)"></i> particular solution</span>
+        <span><i class="legend-line" style="background:var(--gold-ink);opacity:.7"></i> ray from origin</span>
+        <span><i class="legend-dot" style="background:var(--gold)"></i> initial condition</span>
+      </div>
+      <p class="text-xs text-[var(--ink-faint)]">Because f depends only on y⁄x, the slope is identical everywhere along a given ray — that's the scale invariance the substitution v = y⁄x exploits.</p>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       MODULE 3 — LINEAR ODE / INTEGRATING FACTOR
+  ======================================================================= -->
+  <section id="mod-linear" class="module-section hidden grid lg:grid-cols-[400px_1fr] gap-10">
+
+    <div class="page-panel">
+      <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-1">MODEL</p>
+      <select id="lin-preset" class="io mb-1"></select>
+      <p id="lin-context" class="step-note mb-4"></p>
+
+      <div id="lin-controls" class="space-y-3 mb-5"></div>
+
+      <div class="flex gap-2 mb-5">
+        <button id="lin-next" class="btn primary">Reveal next step</button>
+        <button id="lin-reset" class="btn">Reset steps</button>
+      </div>
+
+      <div id="lin-steps"></div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <div class="border border-[var(--rule)] bg-white" style="aspect-ratio:4/3">
+        <canvas id="lin-canvas"></canvas>
+      </div>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ink-soft)]">
+        <span><i class="legend-line" style="background:var(--ink-faint);opacity:.55"></i> solution family (varying C)</span>
+        <span><i class="legend-line" style="background:var(--gold-ink)"></i> particular solution</span>
+        <span><i class="legend-dot" style="background:var(--gold)"></i> initial condition</span>
+      </div>
+      <p class="text-xs text-[var(--ink-faint)]">The faint curves are the same general solution for other constants C — μ(x) makes every one of them integrable in one stroke.</p>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       MODULE 4 — EULER'S METHOD
+  ======================================================================= -->
+  <section id="mod-euler" class="module-section hidden">
+    <div class="grid lg:grid-cols-[400px_1fr] gap-10">
+      <div class="page-panel">
+        <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-1">MODEL</p>
+        <select id="eul-preset" class="io mb-1"></select>
+        <p id="eul-context" class="step-note mb-4"></p>
+
+        <div id="eul-controls" class="space-y-4 mb-5"></div>
+
+        <div class="result-box text-sm">
+          <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-1">RECURRENCE</p>
+          <div id="eul-formula"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div class="border border-[var(--rule)] bg-white" style="aspect-ratio:4/3">
+          <canvas id="eul-canvas"></canvas>
+        </div>
+        <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-[var(--ink-soft)]">
+          <span><i class="legend-line" style="background:var(--ink-faint)"></i> direction field</span>
+          <span><i class="legend-line" style="background:var(--rust)"></i> exact solution (where known)</span>
+          <span><i class="legend-line" style="background:var(--teal)"></i> Euler polygon</span>
+          <span><i class="legend-dot" style="background:var(--gold)"></i> (x₀, y₀)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10">
+      <p class="font-mono text-[.7rem] text-[var(--ink-faint)] mb-2">STEP‑BY‑STEP TABLE</p>
+      <div class="border border-[var(--rule)] overflow-x-auto max-h-72 overflow-y-auto">
+        <table class="euler-table" id="eul-table"></table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="border-t border-[var(--rule)] mt-10">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 py-6 text-xs text-[var(--ink-faint)] flex flex-wrap justify-between gap-2">
+    <span>Built for IB DP Mathematics AA HL, Topic 5 — Chapter 8, "Modelling change: more calculus".</span>
+    <span>Analytical methods only recover a closed form when one exists — that's exactly why §8.3 ends with Euler's method.</span>
+  </div>
+</footer>
+
+<script>
+/* ============================================================================
+   SHARED CANVAS ENGINE
+   One small set of drawing primitives reused by all four modules: a world
+   coordinate system mapped onto a device-pixel-ratio–aware canvas, grid +
+   axes, a slope/direction field, parametric curve plotting, and the Euler
+   polygon. Nothing module-specific lives in here.
+============================================================================ */
+function setupCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function makeMapper(view, w, h){
+  const {xmin,xmax,ymin,ymax} = view;
+  const sx = (x)=> ( (x-xmin)/(xmax-xmin) ) * w;
+  const sy = (y)=> h - ( (y-ymin)/(ymax-ymin) ) * h;
+  const wx = (px)=> xmin + (px/w)*(xmax-xmin);
+  const wy = (py)=> ymin + ((h-py)/h)*(ymax-ymin);
+  return {sx, sy, wx, wy};
+}
+
+function niceStep(range){
+  const raw = range/8;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw/mag;
+  let step;
+  if(norm < 1.5) step = 1;
+  else if(norm < 3.5) step = 2;
+  else if(norm < 7.5) step = 5;
+  else step = 10;
+  return step*mag;
+}
+
+function drawGridAndAxes(ctx, view, w, h, labels){
+  const m = makeMapper(view, w, h);
+  ctx.clearRect(0,0,w,h);
+  ctx.save();
+
+  // grid
+  ctx.strokeStyle = '#f3f1e9';
+  ctx.lineWidth = 1;
+  const stepX = niceStep(view.xmax-view.xmin);
+  const stepY = niceStep(view.ymax-view.ymin);
+  for(let x = Math.ceil(view.xmin/stepX)*stepX; x<=view.xmax; x+=stepX){
+    ctx.beginPath(); ctx.moveTo(m.sx(x),0); ctx.lineTo(m.sx(x),h); ctx.stroke();
+  }
+  for(let y = Math.ceil(view.ymin/stepY)*stepY; y<=view.ymax; y+=stepY){
+    ctx.beginPath(); ctx.moveTo(0,m.sy(y)); ctx.lineTo(w,m.sy(y)); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = '#7d7c5f';
+  ctx.lineWidth = 1.2;
+  if(view.ymin<=0 && view.ymax>=0){
+    ctx.beginPath(); ctx.moveTo(0,m.sy(0)); ctx.lineTo(w,m.sy(0)); ctx.stroke();
+  }
+  if(view.xmin<=0 && view.xmax>=0){
+    ctx.beginPath(); ctx.moveTo(m.sx(0),0); ctx.lineTo(m.sx(0),h); ctx.stroke();
+  }
+
+  // tick labels
+  ctx.fillStyle = '#7d7c5f';
+  ctx.font = '10px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline='top';
+  const y0 = (view.ymin<=0 && view.ymax>=0) ? 0 : view.ymin;
+  for(let x = Math.ceil(view.xmin/stepX)*stepX; x<=view.xmax; x+=stepX){
+    if(Math.abs(x) < stepX/1000) continue;
+    ctx.fillText(round2(x), m.sx(x), Math.min(h-12, m.sy(y0)+3));
+  }
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  const x0 = (view.xmin<=0 && view.xmax>=0) ? 0 : view.xmin;
+  for(let y = Math.ceil(view.ymin/stepY)*stepY; y<=view.ymax; y+=stepY){
+    if(Math.abs(y) < stepY/1000) continue;
+    ctx.fillText(round2(y), Math.max(2,m.sx(x0)+4), m.sy(y));
+  }
+
+  if(labels){
+    ctx.fillStyle = '#37424e';
+    ctx.font = '600 11px "IBM Plex Sans", sans-serif';
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText(labels.x||'x', w-6, m.sy(y0)-4>h-4? h-4 : m.sy(y0)-4);
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(labels.y||'y', m.sx(x0)+6, 4);
+  }
+  ctx.restore();
+  return m;
+}
+
+function round2(v){
+  const r = Math.round(v*100)/100;
+  return (Object.is(r,-0)?0:r).toString();
+}
+
+function drawDirectionField(ctx, view, w, h, m, f, color, density=19){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.1; ctx.globalAlpha=.55;
+  const stepX = (view.xmax-view.xmin)/density;
+  const stepY = (view.ymax-view.ymin)/density;
+  const len = Math.min(stepX,stepY)*0.42;
+  for(let x = view.xmin+stepX/2; x<view.xmax; x+=stepX){
+    for(let y = view.ymin+stepY/2; y<view.ymax; y+=stepY){
+      let slope;
+      try{ slope = f(x,y); }catch(e){ continue; }
+      if(!isFinite(slope)) continue;
+      const norm = Math.sqrt(1+slope*slope);
+      const dx = len/norm, dy = len*slope/norm;
+      const x1=x-dx, y1=y-dy, x2=x+dx, y2=y+dy;
+      ctx.beginPath();
+      ctx.moveTo(m.sx(x1), m.sy(y1));
+      ctx.lineTo(m.sx(x2), m.sy(y2));
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// Plot y = g(x) by sampling; breaks the line on singularities / out-of-range.
+function plotFunctionOfX(ctx, view, m, g, color, width=2.4, alpha=1){
+  ctx.save();
+  ctx.strokeStyle=color; ctx.lineWidth=width; ctx.globalAlpha=alpha;
+  ctx.beginPath();
+  let started=false;
+  const N = 480;
+  for(let i=0;i<=N;i++){
+    const x = view.xmin + (view.xmax-view.xmin)*i/N;
+    let y;
+    try{ y=g(x); }catch(e){ y=NaN; }
+    if(!isFinite(y) || y<view.ymin-(view.ymax-view.ymin)*4 || y>view.ymax+(view.ymax-view.ymin)*4){
+      started=false; continue;
+    }
+    if(!started){ ctx.moveTo(m.sx(x),m.sy(y)); started=true; }
+    else ctx.lineTo(m.sx(x),m.sy(y));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Numerically integrate y' = f(x,y) with RK4 (fine mesh) purely for drawing
+// smooth "exact-looking" particular solution curves when no closed form
+// is supplied — used as a visual reference, not for the Euler module itself.
+function rk4Trace(f, x0, y0, xmin, xmax, h=0.01){
+  const ptsRight=[[x0,y0]], ptsLeft=[[x0,y0]];
+  let x=x0,y=y0;
+  while(x<xmax && isFinite(y)){
+    const k1=f(x,y), k2=f(x+h/2,y+h/2*k1), k3=f(x+h/2,y+h/2*k2), k4=f(x+h,y+h*k3);
+    y += (h/6)*(k1+2*k2+2*k3+k4); x+=h;
+    if(!isFinite(y) || Math.abs(y)>1e4) break;
+    ptsRight.push([x,y]);
+  }
+  x=x0; y=y0;
+  while(x>xmin && isFinite(y)){
+    const k1=f(x,y), k2=f(x-h/2,y-h/2*k1), k3=f(x-h/2,y-h/2*k2), k4=f(x-h,y-h*k3);
+    y -= (h/6)*(k1+2*k2+2*k3+k4); x-=h;
+    if(!isFinite(y) || Math.abs(y)>1e4) break;
+    ptsLeft.push([x,y]);
+  }
+  return ptsLeft.reverse().concat(ptsRight.slice(1));
+}
+
+function plotPoints(ctx, m, pts, color, width=2.4, alpha=1){
+  ctx.save();
+  ctx.strokeStyle=color; ctx.lineWidth=width; ctx.globalAlpha=alpha;
+  ctx.beginPath();
+  let started=false;
+  for(const [x,y] of pts){
+    if(!isFinite(y)){ started=false; continue; }
+    if(!started){ ctx.moveTo(m.sx(x),m.sy(y)); started=true; }
+    else ctx.lineTo(m.sx(x),m.sy(y));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDot(ctx, m, x, y, color, r=5){
+  ctx.save();
+  ctx.fillStyle=color;
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(m.sx(x), m.sy(y), r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function renderMath(){
+  if(window.renderMathInElement){
+    document.querySelectorAll('.katex-target:not(.rendered)').forEach(el=>{
+      renderMathInElement(el, {
+        delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError:false
+      });
+      el.classList.add('rendered');
+    });
+  }
+}
+
+/* ============================================================================
+   MODULE 1 — SEPARABLE VARIABLES
+============================================================================ */
+const SEPARABLE = [
+  {
+    id:'growth',
+    name:'dP/dt = kP — population growth',
+    context:'Example 11: a bacteria colony grows at a rate proportional to its current size.',
+    xLabel:'t', yLabel:'P',
+    view:{xmin:0,xmax:10,ymin:-1,ymax:12},
+    params:{ k:{label:'growth rate k', min:-0.6, max:0.6, step:0.02, value:0.35},
+             y0:{label:'P(0)', min:0.2, max:6, step:0.1, value:1} },
+    f:(t,y,p)=> p.k*y,
+    solution:(t,p)=> p.y0*Math.exp(p.k*t),
+    steps:(p)=>[
+      ['1 · separate','$$\\dfrac{dP}{dt}=kP \\;\\Longrightarrow\\; \\dfrac{dP}{P}=k\\,dt$$', 'All P-terms to the left, all t-terms to the right.'],
+      ['2 · integrate both sides — side by side','<div class="grid grid-cols-2 gap-3"><div class="katex-target">$$\\int \\dfrac{dP}{P}=\\ln|P|+c_1$$</div><div class="katex-target">$$\\int k\\,dt = kt+c_2$$</div></div>', 'Two independent integrals — one in P, one in t — meeting at a single constant.'],
+      ['3 · combine constants','$$\\ln P = kt+c \\;\\Longrightarrow\\; P=e^{kt+c}=Ae^{kt}$$', 'P>0 in this model, so |P| = P.'],
+      ['4 · apply the initial condition',`$$P(0)=${fmt(p.y0)} \\;\\Rightarrow\\; A=${fmt(p.y0)}$$`, ''],
+    ],
+    result:(p)=>`$$P(t)=${fmt(p.y0)}\\,e^{${fmt(p.k)}t}$$`
+  },
+  {
+    id:'cooling',
+    name:"dT/dt = −k(T−T₀) — Newton's law of cooling",
+    context:'Example 12: the classic forensic-cooling model — the same equation you will meet again as a linear ODE.',
+    xLabel:'t (hours)', yLabel:'T (°C)',
+    view:{xmin:0,xmax:10,ymin:0,ymax:45},
+    params:{ k:{label:'rate constant k', min:0.02, max:1, step:0.02, value:0.25},
+             T0:{label:'ambient T₀', min:0, max:30, value:22, step:1},
+             Tinit:{label:'T(0)', min:5, max:45, value:37, step:1} },
+    f:(t,y,p)=> -p.k*(y-p.T0),
+    solution:(t,p)=> p.T0 + (p.Tinit-p.T0)*Math.exp(-p.k*t),
+    steps:(p)=>[
+      ['1 · separate',`$$\\dfrac{dT}{dt}=-k(T-${fmt(p.T0)}) \\;\\Longrightarrow\\; \\dfrac{dT}{T-${fmt(p.T0)}}=-k\\,dt$$`,''],
+      ['2 · integrate',`$$\\ln\\left|T-${fmt(p.T0)}\\right| = -kt+c \\;\\Longrightarrow\\; T-${fmt(p.T0)}=Ae^{-kt}$$`,''],
+      ['3 · apply the initial condition',`$$T(0)=${fmt(p.Tinit)} \\;\\Rightarrow\\; A=${fmt(p.Tinit-p.T0)}$$`,''],
+    ],
+    result:(p)=>`$$T(t)=${fmt(p.T0)}+${fmt(p.Tinit-p.T0)}\\,e^{-${fmt(p.k)}t}$$`
+  },
+  {
+    id:'basic',
+    name:'dy/dx = x(1+y)eˣ',
+    context:'Textbook Example 9 — a purely algebraic separable equation (right‑hand side needs integration by parts).',
+    xLabel:'x', yLabel:'y',
+    view:{xmin:-3,xmax:2,ymin:-5,ymax:8},
+    params:{ y0:{label:'y(0)', min:-2, max:4, step:0.25, value:0.5} },
+    f:(x,y)=> x*(1+y)*Math.exp(x),
+    solution:(x,p)=>{ const A=Math.E*(p.y0+1); return A*Math.exp(x*Math.exp(x)-Math.exp(x))-1; },
+    steps:(p)=>[
+      ['1 · separate','$$\\dfrac{dy}{dx}=x(1+y)e^x \\;\\Longrightarrow\\; \\dfrac{dy}{1+y}=xe^x\\,dx$$',''],
+      ['2 · integrate both sides — side by side','<div class="grid grid-cols-2 gap-3"><div class="katex-target">$$\\int \\dfrac{dy}{1+y}=\\ln|1+y|$$</div><div class="katex-target">$$\\int xe^x\\,dx = xe^x-e^x$$</div></div>','Right‑hand side needs integration by parts (u=x, dv=eˣdx).'],
+      ['3 · combine',`$$\\ln|1+y| = xe^x-e^x+d \\;\\Longrightarrow\\; y=Ae^{xe^x-e^x}-1$$`,''],
+      ['4 · apply the initial condition',`$$y(0)=${fmt(p.y0)} \\;\\Rightarrow\\; A=${fmt(Math.E*(p.y0+1))}$$`,'At x = 0, the exponent xeˣ − eˣ evaluates to −1.'],
+    ],
+    result:(p)=>`$$y=${fmt(Math.E*(p.y0+1))}\\,e^{xe^x-e^x}-1$$`
+  }
+];
+
+function fmt(v){
+  if(Math.abs(v)<1e-9) return '0';
+  const r = Math.round(v*1000)/1000;
+  return r.toString();
+}
+
+const sepState = { presetIdx:0, revealed:1 };
+
+function buildSliders(container, params, onChange, colorVar){
+  container.innerHTML='';
+  Object.entries(params).forEach(([key,cfg])=>{
+    const row = document.createElement('div');
+    row.className='slider-row';
+    row.innerHTML = `
+      <div class="flex justify-between items-baseline mb-1">
+        <label class="text-sm text-[var(--ink-soft)]">${cfg.label}</label>
+        <span class="readout" data-readout="${key}">${fmt(cfg.value)}</span>
+      </div>
+      <input style="--slider-color:${colorVar}" type="range" data-key="${key}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.value}">
+    `;
+    container.appendChild(row);
+    const input = row.querySelector('input');
+    input.addEventListener('input', ()=>{
+      cfg.value = parseFloat(input.value);
+      row.querySelector('[data-readout]').textContent = fmt(cfg.value);
+      onChange();
+    });
+  });
+}
+
+function currentParamValues(params){
+  const out={};
+  Object.entries(params).forEach(([k,cfg])=> out[k]=cfg.value);
+  return out;
+}
+
+function initSeparable(){
+  const select = document.getElementById('sep-preset');
+  SEPARABLE.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=p.name; select.appendChild(o); });
+
+  function renderSteps(){
+    const preset = SEPARABLE[sepState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const steps = preset.steps(p);
+    const wrap = document.getElementById('sep-steps');
+    wrap.innerHTML = steps.map((s,i)=>`
+      <div class="step-line ${i<sepState.revealed?'':'step-hidden'}">
+        <p class="step-label">${s[0]}</p>
+        <div class="step-body katex-target">${s[1]}</div>
+        ${s[2]?`<p class="step-note">${s[2]}</p>`:''}
+      </div>`).join('') + (sepState.revealed>=steps.length ? `
+      <div class="step-line result-box mt-3">
+        <p class="step-label mb-1">general solution</p>
+        <div class="katex-target">${preset.result(p)}</div>
+      </div>`:'');
+    document.getElementById('sep-next').disabled = sepState.revealed>=steps.length;
+    renderMath();
+  }
+
+  function draw(){
+    const preset = SEPARABLE[sepState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const canvas = document.getElementById('sep-canvas');
+    const {ctx,w,h} = setupCanvas(canvas);
+    const m = drawGridAndAxes(ctx, preset.view, w, h, {x:preset.xLabel, y:preset.yLabel});
+    drawDirectionField(ctx, preset.view, w, h, m, (x,y)=>preset.f(x,y,p), '#7d7c5f');
+    plotFunctionOfX(ctx, preset.view, m, (x)=>preset.solution(x,p), '#720e19', 2.6);
+    const x0 = preset.view.xmin<=0 ? 0 : preset.view.xmin;
+    drawDot(ctx, m, x0, preset.solution(x0,p), '#ffc600');
+  }
+
+  function refreshAll(){ renderSteps(); draw(); }
+
+  function loadPreset(){
+    const preset = SEPARABLE[sepState.presetIdx];
+    document.getElementById('sep-context').textContent = preset.context;
+    sepState.revealed = 1;
+    buildSliders(document.getElementById('sep-controls'), preset.params, refreshAll, '#720e19');
+    refreshAll();
+  }
+
+  select.addEventListener('change', ()=>{ sepState.presetIdx = parseInt(select.value); loadPreset(); });
+  document.getElementById('sep-next').addEventListener('click', ()=>{ sepState.revealed++; renderSteps(); });
+  document.getElementById('sep-reset').addEventListener('click', ()=>{ sepState.revealed=1; renderSteps(); });
+
+  loadPreset();
+  window.addEventListener('resize', debounce(draw));
+  return draw;
+}
+
+/* ============================================================================
+   MODULE 2 — HOMOGENEOUS SUBSTITUTION (v = y/x)
+============================================================================ */
+const HOMOGENEOUS = [
+  {
+    id:'h1',
+    name:'x·y′ − y = x²sin x',
+    context:'Textbook Example 14 — solved with y = vx, then dy/dx = v + x·dv/dx.',
+    view:{xmin:-8,xmax:8,ymin:-8,ymax:8},
+    params:{ x1:{label:'reference point x₁', min:1, max:6, step:0.5, value:2},
+             y1:{label:'y at x₁', min:-8, max:8, step:0.5, value:1} },
+    f:(x,y)=> x===0? NaN : x*Math.sin(x) + y/x,
+    cConst:(p)=> p.y1/p.x1 + Math.cos(p.x1),
+    solution:(x,p)=>{ const C = p.y1/p.x1 + Math.cos(p.x1); return x*(C-Math.cos(x)); },
+    steps:(p)=>[
+      ['1 · isolate dy/dx','$$x\\dfrac{dy}{dx}-y=x^2\\sin x \\;\\Longrightarrow\\; \\dfrac{dy}{dx}=x\\sin x+\\dfrac{y}{x}$$',''],
+      ['2 · substitute v = y/x','$$y=vx \\;\\Longrightarrow\\; \\dfrac{dy}{dx}=v+x\\dfrac{dv}{dx}$$','Implicit differentiation of y = vx.'],
+      ['3 · equate and simplify','$$v+x\\dfrac{dv}{dx}=x\\sin x+v \\;\\Longrightarrow\\; \\dfrac{dv}{dx}=\\sin x$$','The v terms cancel — this is exactly the scale‑invariance at work.'],
+      ['4 · integrate and back‑substitute','$$v=-\\cos x+C \\;\\Longrightarrow\\; y=x(C-\\cos x)$$',''],
+      ['5 · apply the reference point',`$$y(${fmt(p.x1)})=${fmt(p.y1)} \\;\\Rightarrow\\; C=${fmt(p.y1/p.x1+Math.cos(p.x1))}$$`,'']
+    ],
+    result:(p)=>`$$y=x\\left(${fmt(p.y1/p.x1+Math.cos(p.x1))}-\\cos x\\right)$$`
+  },
+  {
+    id:'h2',
+    name:'y′ = 1 + y/x',
+    context:'Investigation 6 — the simplest homogeneous equation, x·dy/dx = x + y.',
+    view:{xmin:-8,xmax:8,ymin:-8,ymax:8},
+    params:{ x1:{label:'reference point x₁', min:0.5, max:6, step:0.5, value:1},
+             y1:{label:'y at x₁', min:-8, max:8, step:0.5, value:-1} },
+    f:(x,y)=> x===0? NaN : 1 + y/x,
+    solution:(x,p)=>{ const C = p.y1/p.x1 - Math.log(Math.abs(p.x1)); return x*(Math.log(Math.abs(x))+C); },
+    steps:(p)=>[
+      ['1 · substitute v = y/x','$$y=vx \\;\\Longrightarrow\\; v+x\\dfrac{dv}{dx}=1+v$$',''],
+      ['2 · simplify and separate','$$x\\dfrac{dv}{dx}=1 \\;\\Longrightarrow\\; dv=\\dfrac{dx}{x}$$',''],
+      ['3 · integrate and back‑substitute','$$v=\\ln|x|+C \\;\\Longrightarrow\\; y=x\\big(\\ln|x|+C\\big)$$',''],
+      ['4 · apply the reference point',`$$y(${fmt(p.x1)})=${fmt(p.y1)} \\;\\Rightarrow\\; C=${fmt(p.y1/p.x1-Math.log(Math.abs(p.x1)))}$$`,'']
+    ],
+    result:(p)=>`$$y=x\\left(\\ln|x|+${fmt(p.y1/p.x1-Math.log(Math.abs(p.x1)))}\\right)$$`
+  },
+  {
+    id:'h3',
+    name:'x·y′ = y(ln x − ln y)',
+    context:'Textbook Example 15 — a homogeneous equation whose substitution gives a v·ln v term.',
+    view:{xmin:0.2,xmax:8,ymin:0.2,ymax:8},
+    params:{ x1:{label:'reference point x₁', min:0.5, max:6, step:0.5, value:1},
+             y1:{label:'y at x₁', min:0.5, max:8, step:0.5, value:4} },
+    f:(x,y)=> (x<=0||y<=0)? NaN : (y/x)*Math.log(x/y),
+    solution:(x,p)=>{ const K = p.x1*(Math.log(p.y1/p.x1)+1); return x*Math.exp(K/x - 1); },
+    steps:(p)=>[
+      ['1 · isolate and substitute v = y/x','$$y'+"'"+'=\\dfrac{y}{x}\\ln\\!\\left(\\dfrac{x}{y}\\right) = -v\\ln v,\\qquad y'+"'"+'=v+x\\dfrac{dv}{dx}$$',''],
+      ['2 · separate the variables','$$\\dfrac{dv}{v(\\ln v+1)}=-\\dfrac{dx}{x}$$','Integrate the left by substituting u = ln v + 1.'],
+      ['3 · integrate','$$\\ln\\!\\big(\\ln v+1\\big)=c-\\ln x$$',''],
+      ['4 · back‑substitute v = y/x and solve for y','$$y=x\\,e^{\\,K/x-1},\\qquad K=e^{c}$$',''],
+      ['5 · apply the reference point',`$$y(${fmt(p.x1)})=${fmt(p.y1)} \\;\\Rightarrow\\; K=${fmt(p.x1*(Math.log(p.y1/p.x1)+1))}$$`,'']
+    ],
+    result:(p)=>`$$y=x\\,e^{\\,${fmt(p.x1*(Math.log(p.y1/p.x1)+1))}/x-1}$$`
+  }
+];
+
+const homState = { presetIdx:0, revealed:1 };
+
+function initHomogeneous(){
+  const select = document.getElementById('hom-preset');
+  HOMOGENEOUS.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=p.name; select.appendChild(o); });
+
+  function renderSteps(){
+    const preset = HOMOGENEOUS[homState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const steps = preset.steps(p);
+    const wrap = document.getElementById('hom-steps');
+    wrap.innerHTML = steps.map((s,i)=>`
+      <div class="step-line ${i<homState.revealed?'':'step-hidden'}">
+        <p class="step-label">${s[0]}</p>
+        <div class="step-body katex-target">${s[1]}</div>
+        ${s[2]?`<p class="step-note">${s[2]}</p>`:''}
+      </div>`).join('') + (homState.revealed>=steps.length ? `
+      <div class="step-line result-box mt-3">
+        <p class="step-label mb-1">general solution</p>
+        <div class="katex-target">${preset.result(p)}</div>
+      </div>`:'');
+    document.getElementById('hom-next').disabled = homState.revealed>=steps.length;
+    renderMath();
+  }
+
+  function draw(){
+    const preset = HOMOGENEOUS[homState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const canvas = document.getElementById('hom-canvas');
+    const {ctx,w,h} = setupCanvas(canvas);
+    const m = drawGridAndAxes(ctx, preset.view, w, h, {x:'x', y:'y'});
+    drawDirectionField(ctx, preset.view, w, h, m, (x,y)=>preset.f(x,y,p), '#7d7c5f');
+
+    if(document.getElementById('hom-rays').checked){
+      const v = preset.view;
+      const showRays = [0.4,0.8,1.2,1.6].map(k=>p.y1/p.x1*k);
+      ctx.save(); ctx.globalAlpha=.5; ctx.strokeStyle='#a67c00'; ctx.lineWidth=1;
+      showRays.forEach(slope=>{
+        ctx.beginPath();
+        ctx.moveTo(m.sx(v.xmin), m.sy(v.xmin*slope));
+        ctx.lineTo(m.sx(v.xmax), m.sy(v.xmax*slope));
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    const pts = rk4Trace((x,y)=>preset.f(x,y,p), p.x1, p.y1, preset.view.xmin, preset.view.xmax, 0.02);
+    plotPoints(ctx, m, pts, '#37424e', 2.6);
+    drawDot(ctx, m, p.x1, p.y1, '#ffc600');
+  }
+
+  function refreshAll(){ renderSteps(); draw(); }
+  function loadPreset(){
+    const preset = HOMOGENEOUS[homState.presetIdx];
+    document.getElementById('hom-context').textContent = preset.context;
+    homState.revealed = 1;
+    buildSliders(document.getElementById('hom-controls'), preset.params, refreshAll, '#37424e');
+    refreshAll();
+  }
+
+  select.addEventListener('change', ()=>{ homState.presetIdx=parseInt(select.value); loadPreset(); });
+  document.getElementById('hom-next').addEventListener('click', ()=>{ homState.revealed++; renderSteps(); });
+  document.getElementById('hom-reset').addEventListener('click', ()=>{ homState.revealed=1; renderSteps(); });
+  document.getElementById('hom-rays').addEventListener('change', draw);
+
+  loadPreset();
+  window.addEventListener('resize', debounce(draw));
+  return draw;
+}
+
+/* ============================================================================
+   MODULE 3 — LINEAR ODE & INTEGRATING FACTOR
+============================================================================ */
+const LINEAR = [
+  {
+    id:'l1',
+    name:'(x+1)y′ − 3y = (x+1)⁵',
+    context:'Textbook Example 16 — standard form then μ(x) = e^∫P dx = 1/(x+1)³.',
+    view:{xmin:-3,xmax:4,ymin:-10,ymax:10},
+    params:{ x1:{label:'x₁ (x ≠ −1)', min:-0.5, max:3, step:0.25, value:0},
+             y1:{label:'y at x₁', min:-8, max:8, step:0.5, value:1} },
+    f:(x,y)=> x===-1? NaN : 3*y/(x+1) + Math.pow(x+1,4),
+    Ptext:'P(x) = \\dfrac{-3}{x+1}', mutext:'\\mu(x)=\\dfrac{1}{(x+1)^3}',
+    Cfor:(p)=> p.y1/Math.pow(p.x1+1,3) - p.x1*p.x1/2 - p.x1,
+    solution:(x,p)=>{ const C=p.y1/Math.pow(p.x1+1,3) - p.x1*p.x1/2 - p.x1; return Math.pow(x+1,3)*(x*x/2+x+C); },
+    steps:(p)=>[
+      ['1 · standard form','$$\\dfrac{dy}{dx}-\\dfrac{3}{x+1}y=(x+1)^4$$',''],
+      ['2 · integrating factor','$$\\mu(x)=e^{\\int -3/(x+1)\\,dx}=e^{-3\\ln(x+1)}=\\dfrac{1}{(x+1)^3}$$',''],
+      ['3 · multiply through — the LHS becomes an exact derivative','$$\\dfrac{d}{dx}\\!\\left(\\dfrac{y}{(x+1)^3}\\right)=x+1$$',''],
+      ['4 · integrate both sides','$$\\dfrac{y}{(x+1)^3}=\\dfrac{x^2}{2}+x+C$$',''],
+      ['5 · apply the initial condition',`$$y(${fmt(p.x1)})=${fmt(p.y1)} \\;\\Rightarrow\\; C=${fmt(p.y1/Math.pow(p.x1+1,3)-p.x1*p.x1/2-p.x1)}$$`,'']
+    ],
+    result:(p)=>`$$y=(x+1)^3\\left(\\dfrac{x^2}{2}+x+${fmt(p.y1/Math.pow(p.x1+1,3)-p.x1*p.x1/2-p.x1)}\\right)$$`
+  },
+  {
+    id:'l2',
+    name:'y′ − y·tan x = −sec x',
+    context:'Textbook Example 17 — already in standard form, μ(x) = cos x.',
+    view:{xmin:-1.3,xmax:1.3,ymin:-8,ymax:8},
+    params:{ x1:{label:'x₁', min:-1, max:1, step:0.1, value:0},
+             y1:{label:'y at x₁', min:-4, max:4, step:0.25, value:1} },
+    f:(x,y)=> y*Math.tan(x) - 1/Math.cos(x),
+    Ptext:'P(x)=-\\tan x', mutext:'\\mu(x)=\\cos x',
+    solution:(x,p)=>{ const C = p.y1*Math.cos(p.x1)+p.x1; return (C-x)/Math.cos(x); },
+    steps:(p)=>[
+      ['1 · integrating factor','$$\\mu(x)=e^{\\int -\\tan x\\,dx}=e^{\\ln(\\cos x)}=\\cos x$$',''],
+      ['2 · multiply through','$$\\cos x\\dfrac{dy}{dx}-y\\sin x=-1 \\;\\Longrightarrow\\; \\dfrac{d}{dx}(y\\cos x)=-1$$',''],
+      ['3 · integrate','$$y\\cos x=-x+C$$',''],
+      ['4 · apply the initial condition',`$$y(${fmt(p.x1)})=${fmt(p.y1)} \\;\\Rightarrow\\; C=${fmt(p.y1*Math.cos(p.x1)+p.x1)}$$`,'']
+    ],
+    result:(p)=>`$$y=\\dfrac{${fmt(p.y1*Math.cos(p.x1)+p.x1)}-x}{\\cos x}$$`
+  },
+  {
+    id:'l3',
+    name:"dT/dt + kT = kT₀ — cooling, recast as linear",
+    context:"The same physical law from Module 1, solved this time with an integrating factor instead of separation.",
+    view:{xmin:0,xmax:10,ymin:0,ymax:45},
+    params:{ k:{label:'rate constant k', min:0.02, max:1, value:0.25, step:0.02},
+             T0:{label:'ambient T₀', min:0, max:30, value:22, step:1},
+             Tinit:{label:'T(0)', min:5, max:45, value:37, step:1} },
+    f:(t,y,p)=> -p.k*(y-p.T0),
+    Ptext:'P(t)=k', mutext:'\\mu(t)=e^{kt}',
+    solution:(t,p)=> p.T0 + (p.Tinit-p.T0)*Math.exp(-p.k*t),
+    steps:(p)=>[
+      ['1 · standard form','$$\\dfrac{dT}{dt}+kT=kT_0$$',''],
+      ['2 · integrating factor','$$\\mu(t)=e^{\\int k\\,dt}=e^{kt}$$',''],
+      ['3 · multiply through',`$$\\dfrac{d}{dt}\\left(Te^{kt}\\right)=kT_0e^{kt}$$`,''],
+      ['4 · integrate','$$Te^{kt}=T_0e^{kt}+C \\;\\Longrightarrow\\; T=T_0+Ce^{-kt}$$',''],
+      ['5 · apply the initial condition',`$$T(0)=${fmt(p.Tinit)} \\;\\Rightarrow\\; C=${fmt(p.Tinit-p.T0)}$$`,'']
+    ],
+    result:(p)=>`$$T(t)=${fmt(p.T0)}+${fmt(p.Tinit-p.T0)}e^{-${fmt(p.k)}t}$$`
+  }
+];
+
+const linState = { presetIdx:0, revealed:1 };
+
+function initLinear(){
+  const select = document.getElementById('lin-preset');
+  LINEAR.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=p.name; select.appendChild(o); });
+
+  function renderSteps(){
+    const preset = LINEAR[linState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const steps = preset.steps(p);
+    const wrap = document.getElementById('lin-steps');
+    wrap.innerHTML = steps.map((s,i)=>`
+      <div class="step-line ${i<linState.revealed?'':'step-hidden'}">
+        <p class="step-label">${s[0]}</p>
+        <div class="step-body katex-target">${s[1]}</div>
+        ${s[2]?`<p class="step-note">${s[2]}</p>`:''}
+      </div>`).join('') + (linState.revealed>=steps.length ? `
+      <div class="step-line result-box mt-3">
+        <p class="step-label mb-1">particular solution</p>
+        <div class="katex-target">${preset.result(p)}</div>
+      </div>`:'');
+    document.getElementById('lin-next').disabled = linState.revealed>=steps.length;
+    renderMath();
+  }
+
+  function draw(){
+    const preset = LINEAR[linState.presetIdx];
+    const p = currentParamValues(preset.params);
+    const canvas = document.getElementById('lin-canvas');
+    const {ctx,w,h} = setupCanvas(canvas);
+    const m = drawGridAndAxes(ctx, preset.view, w, h, {x:'x', y:'y'});
+
+    // Faint family of solutions for a spread of Cs (visual context only)
+    if(preset.Cfor || preset.solution){
+      const baseC = 0; // just vary an additive offset visually by shifting y1 through solution fn
+      const spread = [-2,-1,1,2];
+      spread.forEach(dOff=>{
+        const shiftedP = Object.assign({}, p, {y1: p.y1 + dOff});
+        try{ plotFunctionOfX(ctx, preset.view, m, (x)=>preset.solution(x, shiftedP), '#7d7c5f', 1.3, .35); }catch(e){}
+      });
+    }
+    plotFunctionOfX(ctx, preset.view, m, (x)=>preset.solution(x,p), '#a67c00', 2.6, 1);
+    drawDot(ctx, m, p.x1, p.y1, '#ffc600');
+  }
+
+  function refreshAll(){ renderSteps(); draw(); }
+  function loadPreset(){
+    const preset = LINEAR[linState.presetIdx];
+    document.getElementById('lin-context').textContent = preset.context;
+    linState.revealed = 1;
+    buildSliders(document.getElementById('lin-controls'), preset.params, refreshAll, '#ffc600');
+    refreshAll();
+  }
+
+  select.addEventListener('change', ()=>{ linState.presetIdx=parseInt(select.value); loadPreset(); });
+  document.getElementById('lin-next').addEventListener('click', ()=>{ linState.revealed++; renderSteps(); });
+  document.getElementById('lin-reset').addEventListener('click', ()=>{ linState.revealed=1; renderSteps(); });
+
+  loadPreset();
+  window.addEventListener('resize', debounce(draw));
+  return draw;
+}
+
+/* ============================================================================
+   MODULE 4 — EULER'S METHOD
+============================================================================ */
+const EULER = [
+  {
+    id:'e1',
+    name:"y′ = 1 + y  (Investigation 8)",
+    context:'Has a known exact solution — perfect for seeing how h controls the error.',
+    view:{xmin:0,xmax:5,ymin:-2,ymax:20},
+    f:(x,y)=> 1+y,
+    exact:(x,p)=> (p.y0+1)*Math.exp(x)-1,
+    x0default:0, y0default:1
+  },
+  {
+    id:'e2',
+    name:"y′ = sin(x+y) − eˣ  (Example 18)",
+    context:'No elementary closed form exists for this one — Euler’s method is the only way in.',
+    view:{xmin:0,xmax:2,ymin:-3,ymax:5},
+    f:(x,y)=> Math.sin(x+y) - Math.exp(x),
+    exact:null,
+    x0default:0, y0default:4
+  },
+  {
+    id:'e3',
+    name:"dT/dt = −k(T−T₀) — cooling",
+    context:'A well-behaved, bounded model — good for seeing Euler converge cleanly even with a fairly coarse h.',
+    view:{xmin:0,xmax:10,ymin:0,ymax:45},
+    f:(t,y,p)=> -0.25*(y-22),
+    exact:(t,p)=> 22 + (p.y0-22)*Math.exp(-0.25*t),
+    x0default:0, y0default:37
+  }
+];
+
+const eulState = { presetIdx:0, h:0.5, N:10, x0:0, y0:1 };
+
+function initEuler(){
+  const select = document.getElementById('eul-preset');
+  EULER.forEach((p,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=p.name; select.appendChild(o); });
+
+  document.getElementById('eul-formula').innerHTML =
+    `<div class="katex-target">$$x_{n+1}=x_n+h,\\qquad y_{n+1}=y_n+h\\,f(x_n,y_n)$$</div>`;
+
+  function buildControls(){
+    const preset = EULER[eulState.presetIdx];
+    eulState.x0 = preset.x0default;
+    eulState.y0 = preset.y0default;
+    const wrap = document.getElementById('eul-controls');
+    wrap.innerHTML = `
+      <div class="slider-row">
+        <div class="flex justify-between items-baseline mb-1">
+          <label class="text-sm text-[var(--ink-soft)]">y(x₀) — initial value</label>
+          <span class="readout" id="eul-y0-read">${fmt(eulState.y0)}</span>
+        </div>
+        <input style="--slider-color:#ffc600" type="range" id="eul-y0" min="${eulState.y0-6}" max="${eulState.y0+6}" step="0.25" value="${eulState.y0}">
+      </div>
+      <div class="slider-row">
+        <div class="flex justify-between items-baseline mb-1">
+          <label class="text-sm text-[var(--ink-soft)]">step size h</label>
+          <span class="readout" id="eul-h-read">${fmt(eulState.h)}</span>
+        </div>
+        <input style="--slider-color:#37424e" type="range" id="eul-h" min="0.05" max="1" step="0.05" value="${eulState.h}">
+      </div>
+      <div class="slider-row">
+        <div class="flex justify-between items-baseline mb-1">
+          <label class="text-sm text-[var(--ink-soft)]">number of steps N</label>
+          <span class="readout" id="eul-N-read">${eulState.N}</span>
+        </div>
+        <input style="--slider-color:#37424e" type="range" id="eul-N" min="1" max="60" step="1" value="${eulState.N}">
+      </div>
+    `;
+    wrap.querySelector('#eul-y0').addEventListener('input', e=>{
+      eulState.y0 = parseFloat(e.target.value);
+      wrap.querySelector('#eul-y0-read').textContent = fmt(eulState.y0);
+      refresh();
+    });
+    wrap.querySelector('#eul-h').addEventListener('input', e=>{
+      eulState.h = parseFloat(e.target.value);
+      wrap.querySelector('#eul-h-read').textContent = fmt(eulState.h);
+      refresh();
+    });
+    wrap.querySelector('#eul-N').addEventListener('input', e=>{
+      eulState.N = parseInt(e.target.value);
+      wrap.querySelector('#eul-N-read').textContent = eulState.N;
+      refresh();
+    });
+  }
+
+  function computeEuler(preset){
+    const p = { y0: eulState.y0 };
+    const pts = [[eulState.x0, eulState.y0]];
+    let x = eulState.x0, y = eulState.y0;
+    for(let n=0;n<eulState.N;n++){
+      const slope = preset.f(x,y,p);
+      const yNext = y + eulState.h*slope;
+      const xNext = x + eulState.h;
+      pts.push([xNext,yNext]);
+      x=xNext; y=yNext;
+      if(!isFinite(y)) break;
+    }
+    return pts;
+  }
+
+  function renderTable(preset, pts){
+    const p = {y0:eulState.y0};
+    const rows = pts.map((pt,i)=>{
+      const [x,y]=pt;
+      const slope = i<pts.length-1 ? preset.f(x,y,p) : null;
+      return `<tr><td>${i}</td><td>${fmt(x)}</td><td>${fmt(y)}</td><td>${slope===null?'—':fmt(slope)}</td></tr>`;
+    }).join('');
+    document.getElementById('eul-table').innerHTML = `
+      <thead><tr><th>n</th><th>xₙ</th><th>yₙ</th><th>f(xₙ,yₙ)</th></tr></thead>
+      <tbody>${rows}</tbody>`;
+  }
+
+  function draw(){
+    const preset = EULER[eulState.presetIdx];
+    const p = {y0:eulState.y0};
+    const canvas = document.getElementById('eul-canvas');
+    const {ctx,w,h} = setupCanvas(canvas);
+    const m = drawGridAndAxes(ctx, preset.view, w, h, {x:'x', y:'y'});
+    drawDirectionField(ctx, preset.view, w, h, m, (x,y)=>preset.f(x,y,p), '#7d7c5f');
+
+    if(preset.exact){
+      plotFunctionOfX(ctx, preset.view, m, (x)=>preset.exact(x,p), '#720e19', 2.2, .9);
+    }
+
+    const pts = computeEuler(preset);
+    ctx.save();
+    ctx.strokeStyle='#37424e'; ctx.fillStyle='#37424e'; ctx.lineWidth=2.4;
+    ctx.beginPath();
+    pts.forEach(([x,y],i)=>{ if(i===0) ctx.moveTo(m.sx(x),m.sy(y)); else ctx.lineTo(m.sx(x),m.sy(y)); });
+    ctx.stroke();
+    pts.forEach(([x,y])=>{ if(isFinite(y)){ ctx.beginPath(); ctx.arc(m.sx(x),m.sy(y),2.6,0,Math.PI*2); ctx.fill(); } });
+    ctx.restore();
+
+    drawDot(ctx, m, eulState.x0, eulState.y0, '#ffc600', 5.5);
+    renderTable(preset, pts);
+  }
+
+  function refresh(){ draw(); }
+
+  select.addEventListener('change', ()=>{
+    eulState.presetIdx = parseInt(select.value);
+    document.getElementById('eul-context').textContent = EULER[eulState.presetIdx].context;
+    buildControls();
+    draw();
+  });
+
+  document.getElementById('eul-context').textContent = EULER[0].context;
+  buildControls();
+  draw();
+  window.addEventListener('resize', debounce(draw));
+  return draw;
+}
+
+/* ============================================================================
+   TAB SWITCHING + BOOTSTRAP
+============================================================================ */
+function debounce(fn, ms=120){
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const drawFns = {};
+  drawFns.separable = initSeparable();
+  drawFns.homogeneous = initHomogeneous();
+  drawFns.linear = initLinear();
+  drawFns.euler = initEuler();
+  renderMath();
+
+  const tabs = document.querySelectorAll('.modtab');
+  const sections = {
+    separable: document.getElementById('mod-separable'),
+    homogeneous: document.getElementById('mod-homogeneous'),
+    linear: document.getElementById('mod-linear'),
+    euler: document.getElementById('mod-euler'),
+  };
+
+  tabs.forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      const mod = tab.dataset.mod;
+      tabs.forEach(t=>t.setAttribute('aria-selected', t===tab ? 'true':'false'));
+      Object.entries(sections).forEach(([key,sec])=> sec.classList.toggle('hidden', key!==mod));
+      // canvases hidden by display:none report 0 size — redraw once visible
+      requestAnimationFrame(()=> drawFns[mod] && drawFns[mod]());
+      renderMath();
+    });
+  });
+});
+</script>
+</body>
+</html>
